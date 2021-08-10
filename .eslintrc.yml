@@ -1,0 +1,33 @@
+root: true
+
+env:
+  browser: true
+  node: true
+
+extends:
+  - "eslint:recommended"
+  - "plugin:yml/standard"
+  - "plugin:@typescript-eslint/recommended"
+
+parser: "@typescript-eslint/parser"
+
+plugins:
+  - "@typescript-eslint"
+
+rules:
+  no-useless-concat: error
+  require-await: error
+  "@typescript-eslint/ban-ts-comment": off
+  "@typescript-eslint/explicit-module-boundary-types": off
+  "@typescript-eslint/consistent-type-imports": warn
+
+overrides:
+  - files:
+      - "*.ts"
+      - "*.tsx"
+    rules:
+      no-undef: off
+  - files:
+      - "*.yml"
+      - "*.yaml"
+    parser: yaml-eslint-parser

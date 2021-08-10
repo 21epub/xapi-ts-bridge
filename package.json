@@ -1,0 +1,29 @@
+{
+  "name": "@21epub/xapi-ts-wrapper",
+  "version": "0.1.0",
+  "description": "",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "typings": "dist/index.d.ts",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rm -rf dist && rollup -c",
+    "lint": "eslint .",
+    "release": "npm version patch && npm run build && npm publish"
+  },
+  "devDependencies": {
+    "@babel/preset-env": "^7.15.0",
+    "@rollup/plugin-babel": "^5.3.0",
+    "@rollup/plugin-eslint": "^8.0.1",
+    "@rollup/plugin-typescript": "^8.2.5",
+    "@typescript-eslint/eslint-plugin": "^4.29.1",
+    "eslint-plugin-yml": "^0.10.0",
+    "rollup": "^2.56.2"
+  },
+  "dependencies": {
+    "@xapi/xapi": "^1.2.1"
+  }
+}
