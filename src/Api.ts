@@ -48,34 +48,43 @@ class Api {
     return params
   }
 
-  async sendStatement(value: Partial<Statement> & Pick<Statement, 'verb'>) {
+  private async request<T>(req: () => T) {
+    if (this.launchData.endpoint === undefined) return
+
     try {
-      const state = {
-        actor: this.launchData.actor,
-        object: {
-          objectType: 'Activity',
-          id: this.launchData.activity_id ?? '',
-        } as Activity,
-        ...value,
-      }
-      const res = await this.xapi.sendStatement(state)
-      this.print('sendStatement', value, res)
+      const res = await req()
+      this.print(res)
 
       return res
     } catch (err) {
-      this.print('sendStatement', err)
+      this.print(err)
     }
   }
 
-  async getState<T = any>(id: string, registration?: string) {
-    try {
-      const res = await this.xapi.getState(...this.getPrams(), id, registration)
-      this.print('getState', id, res)
+  async sendStatement(value: Partial<Statement> & Pick<Statement, 'verb'>) {
+    this.print('sendStatement', value)
 
-      return res as Response<T>
-    } catch (err) {
-      this.print('getState', err)
+    const state = {
+      actor: this.launchData.actor,
+      object: {
+        objectType: 'Activity',
+        id: this.launchData.activity_id ?? '',
+      } as Activity,
+      ...value,
     }
+    const res = await this.request(() => this.xapi.sendStatement(state))
+
+    return res
+  }
+
+  async getState<T = any>(id: string, registration?: string) {
+    this.print('getState', id)
+
+    const res = await this.request(() =>
+      this.xapi.getState(...this.getPrams(), id, registration)
+    )
+
+    return res as Response<T>
   }
 
   async setState(
@@ -86,8 +95,10 @@ class Api {
     matchHeader?: 'If-Match' | 'If-None-Match',
     contentType?: string
   ) {
-    try {
-      const res = await this.xapi.setState(
+    this.print('setState', stateId, state)
+
+    const res = await this.request(() => {
+      return this.xapi.setState(
         ...this.getPrams(),
         stateId,
         state,
@@ -96,27 +107,23 @@ class Api {
         matchHeader,
         contentType
       )
-      this.print('setState', stateId, state, res)
+    })
 
-      return res
-    } catch (err) {
-      this.print('setState', err)
-    }
+    return res
   }
 
   async getStatus(registration?: string) {
-    try {
-      const res = await this.xapi.getState(
+    this.print('getStatus')
+
+    const res = await this.request(() => {
+      return this.xapi.getState(
         ...this.getPrams(),
         getStateId('status'),
         registration
       )
-      this.print('getStatus', res)
+    })
 
-      return res as Response<Status>
-    } catch (err) {
-      this.print('getStatus', err)
-    }
+    return res as Response<Status>
   }
 
   async setStatus(
@@ -126,8 +133,10 @@ class Api {
     matchHeader?: 'If-Match' | 'If-None-Match',
     contentType?: string
   ) {
-    try {
-      const res = await this.xapi.setState(
+    this.print('setStatus', state)
+
+    const res = await this.request(() => {
+      return this.xapi.setState(
         ...this.getPrams(),
         getStateId('status'),
         state,
@@ -136,51 +145,42 @@ class Api {
         matchHeader,
         contentType
       )
-      this.print('setStatus', state, res)
+    })
 
-      return res
-    } catch (err) {
-      this.print('setStatus', err)
-    }
+    return res
   }
 
   async initialize() {
-    try {
-      const res = await this.sendStatement({
-        verb: XAPI.Verbs.INITIALIZED,
-      })
-      this.print('initialize', res)
+    this.print('initialize')
 
-      const statusData = await this.getStatus()
-      if (statusData?.data !== 'completed') await this.setStatus('incomplete')
+    const res = await this.sendStatement({
+      verb: XAPI.Verbs.INITIALIZED,
+    })
 
-      return res
-    } catch (err) {
-      this.print('initialize', err)
-    }
+    const statusData = await this.getStatus()
+    if (statusData?.data !== 'completed') await this.setStatus('incomplete')
+
+    return res
   }
 
   async terminate() {
-    try {
-      const sessionTime = Date.now() - this.startTime
+    this.print('terminate')
 
-      await this.setState(getStateId('sessionTime'), sessionTime)
+    const sessionTime = Date.now() - this.startTime
 
-      const lastTotalTime =
-        (await this.getState(getStateId('totalTime')))?.data ?? 0
-      const newTotalTime = lastTotalTime + sessionTime
+    await this.setState(getStateId('sessionTime'), sessionTime)
 
-      await this.setState(getStateId('totalTime'), newTotalTime)
+    const lastTotalTime =
+      (await this.getState(getStateId('totalTime')))?.data ?? 0
+    const newTotalTime = lastTotalTime + sessionTime
 
-      const res = await this.sendStatement({
-        verb: XAPI.Verbs.TERMINATED,
-      })
-      this.print('terminate', res)
+    await this.setState(getStateId('totalTime'), newTotalTime)
 
-      return res
-    } catch (err) {
-      this.print('terminate', err)
-    }
+    const res = await this.sendStatement({
+      verb: XAPI.Verbs.TERMINATED,
+    })
+
+    return res
   }
 }
 
